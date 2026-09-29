@@ -1,0 +1,11 @@
+{
+  "name": "experiment-harness",
+  "description": "Experiment-driven research harness — task anchor, frozen eval protocol, experiment log with retractions, role contract between human (ideas, architecture) and Claude (execution, logging, git).",
+  "version": "0.1.0",
+  "author": {
+    "name": "justneedsomelittlehelp"
+  },
+  "repository": "https://github.com/justneedsomelittlehelp/experiment-harness",
+  "license": "MIT",
+  "keywords": ["experiments", "research", "ml-competition", "harness", "claude-code"]
+}

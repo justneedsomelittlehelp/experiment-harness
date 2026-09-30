@@ -1,6 +1,6 @@
 ---
 name: experiment-harness
-version: 0.1.0
+version: 0.1.3
 description: >
   Set up and run a research harness for experiment-driven projects — ML/prediction competitions,
   bot/agent competitions, and research playgrounds — where the human owns ideas and architecture
@@ -9,7 +9,7 @@ description: >
   "start a new experiment project", or hands over a task plus data/engine and wants Claude to run
   the experiment loop. Also use it for the harness's recurring operations: "new experiment",
   "process inbox", "run EXP-N", "log results", "retract", "status report", "freeze", "submit",
-  "task/engine updated", "postmortem", and "migrate from project-harness".
+  "task/engine updated", "postmortem", "migrate from project-harness", and "upgrade harness".
 ---
 
 # Experiment Harness
@@ -62,12 +62,29 @@ Rules that make the contract hold:
 | Layer | File(s) | Purpose |
 |---|---|---|
 | Navigation hub | `CLAUDE.md` | Role contract, routing table, status, stop points |
-| Task anchor | `docs/task-spec.md` | Anti-hallucination anchor: data schema, metric, constraints, submission, deadlines |
+| Task anchor | `docs/task-spec.md` | Anchor for the outside world: data schema, metric, constraints, submission, deadlines |
+| Code anchor | `docs/code-map.md` | Anchor for the repo: entry points, configs, eval scripts, results layout, key functions |
+| Foundations | `docs/arch-foundations.md` | Stack and dependency choices with reasons (runtime, export format, versions) |
 | Eval protocol | `docs/eval-protocol.md` | Splits, holdout, seeds, promotion criterion, leakage checklist — **frozen** |
 | Architecture specs | `docs/arch-{component}.md` | Human-authored model/agent specs; the implementation must match |
 | Experiment system | `experiments/` | `LOG.md`, `EXP-NNN.md`, `INBOX.md`, `REJECTED.md`, `FINDINGS.md`, `COMPUTE.md` |
-| Harness procedure | `docs/arch-harness.md` | Maintenance events, audits, retraction procedure pointer |
+| Harness procedure | `docs/arch-harness.md` | Harness version, maintenance events, audits, retraction pointer |
 | Rules | `.claude/rules/*.md` | Invariants that auto-load on matching file reads |
+
+**Two anchors, one precedence rule.** `task-spec.md` is the authority for facts about the task;
+`code-map.md` for facts about the repo (paths, entry points, function names). Every claim elsewhere
+must be checkable against one of them in a single read. When two docs disagree, correct the anchor
+first (against the source or the code), then fix the doc that drifted.
+
+**Two retrieval paths, both needed.** The CLAUDE.md routing table is advisory and fires on
+*intent* ("I'm about to change the loss"). Path-scoped rules are mechanical and fire on *file
+reads*. Rules cover implementation but not planning; the routing table covers planning but can be
+skipped. Generate both, for every doc that has invariants.
+
+**The first 30 lines of every doc stand alone.** Each doc opens with a header block — *Read this
+when* / *Does NOT cover* / *Related docs* / *Invariants* — enough to tell whether it's the right doc
+and to act safely without reading further. *Does NOT cover* prevents confident answers about things
+the doc never addressed; *Related docs* lets a reader move sideways without going back to CLAUDE.md.
 
 ### Context budgets
 
@@ -81,6 +98,47 @@ Rules that make the contract hold:
 
 CLAUDE.md is tighter than project-harness's 150 because experiment projects accumulate status fast;
 the status block must stay a snapshot, never a diary.
+
+### Context placement and auto memory
+
+Two surfaces load in full every session: `CLAUDE.md` and Claude Code's **auto memory** index
+(`~/.claude/projects/<project>/memory/`). The harness keeps both thin by giving every fact exactly
+one home in the repo — and auto memory is allowed to hold **pointers only**.
+
+- **The harness creates no memory file.** Auto memory is Claude's own, machine-local channel; don't
+  structure it. Don't create a root `MEMORY.md` — Claude Code doesn't load it.
+- **Pointers, not facts — written as a mini routing row.** Every memory entry uses one format:
+  `When <situation> → read <path> (<what's there, one line>)`. Example:
+  `When a result beats the baseline by a wide margin → read protocols.md § Leakage Audit (the 5 checks to run before logging ADOPT)`.
+  The "what's there" line describes the doc's content, never its current values.
+- **Only for non-obvious context.** Both CLAUDE.md and the memory index load every session, so a
+  memory pointer must not repeat a CLAUDE.md routing row. Use memory for triggers the routing table
+  doesn't cover: easy-to-miss situations, lessons tied to a trap, cross-doc links.
+- **Never in auto memory:** experiment status, scores, seeds, verdicts, budget figures, deadlines,
+  or architecture details. They go stale within days, and a retracted number surviving in memory
+  gets quoted again. Their homes are CLAUDE.md Status, `LOG.md`, `FINDINGS.md`, `COMPUTE.md`,
+  `task-spec.md`.
+- **Allowed:** machine- or user-specific context with no repo home (e.g. "RunPod volume mounted at
+  `/workspace`", "user prefers answers in Korean"), and pointers.
+- Put these rules in CLAUDE.md (template § Memory) so they're read before anything is saved, and
+  prune memory at every audit and after every retraction.
+- **`@import` is not a context shortcut.** A file pulled into CLAUDE.md with `@path` loads in full
+  at launch like the rest of CLAUDE.md. Use routing rows for long docs, never imports.
+- **A rule file without `paths` loads unconditionally** — same cost as CLAUDE.md. Every rule in this
+  harness has `paths`.
+
+| Fact | Home |
+|---|---|
+| Current snapshot (baseline, active EXPs, budget, deadline) | CLAUDE.md Status |
+| Data, metric, constraints | `docs/task-spec.md` |
+| Where code lives, entry points, function names | `docs/code-map.md` |
+| Why a library, runtime, version or export format was chosen | `docs/arch-foundations.md` |
+| How we evaluate | `docs/eval-protocol.md` |
+| What the model is | `docs/arch-<component>.md` |
+| What was tried / believed / rejected | `LOG.md` / `FINDINGS.md` / `REJECTED.md` |
+| Money | `COMPUTE.md` |
+| Personal notes not to commit | `CLAUDE.local.md` (gitignored) |
+| Machine-specific paths, user preferences, pointers | auto memory |
 
 ### Archetypes
 
@@ -100,15 +158,16 @@ prediction archetype with the submission gate removed and a pristine holdout ins
 
 Templates are in `references/templates.md`; the experiment lifecycle, git policy, statistics,
 leakage audit, retraction and postmortem procedures in `references/protocols.md`; migration from a
-project-harness repo in `references/upgrade.md`. **Don't write a harness file from memory when a
+project-harness repo and upgrades between experiment-harness versions in `references/upgrade.md`. **Don't write a harness file from memory when a
 template exists for it** — read the template section first.
 
 ### Step 0: Detect the mode
 
 | Situation | Mode |
 |---|---|
-| Empty or new repo | **Setup** → Steps 1–8 |
-| Repo has a project-harness (`roadmap/`, `architecture_docs/`) | **Migrate** → `references/upgrade.md` |
+| Empty or new repo (an existing non-harness CLAUDE.md is merged, not replaced) | **Setup** → Steps 1–8 |
+| Repo has a project-harness (`roadmap/`, `architecture_docs/`) | **Migrate** → `upgrade.md` § Migrate |
+| Repo has an experiment-harness older than this skill's version | **Upgrade** → `upgrade.md` § Self-upgrade |
 | Harness exists and the user asks for an operation | **Operate** → Step 9 |
 | Task spec, engine version or data changed | **Spec change** → `protocols.md` § Spec change |
 | Project ending or deadline passed | **Postmortem** → `protocols.md` § Postmortem |
@@ -127,6 +186,10 @@ Ask (or read, if the user gives links or files):
 If official documentation exists online, fetch it (an `llms.txt` index if offered). The task anchor
 is built from sources, never from memory.
 
+**If a `CLAUDE.md` already exists** (e.g. shipped with starter code), read it fully first. Preserve
+every existing rule, convention and env note; merge the harness sections into it; don't duplicate
+what's already there. The routing table goes near the top.
+
 ### Step 2: Build the task anchor
 
 Create `docs/task-spec.md` from the template: flat tables only, stamped
@@ -134,6 +197,13 @@ Create `docs/task-spec.md` from the template: flat tables only, stamped
 anywhere in the repo must be checkable there. Unknowns are written `UNKNOWN — check <where>`, never
 guessed. Derived budgets (e.g. per-step inference time, memory footprint) are computed here with
 the arithmetic shown.
+
+Then create `docs/arch-foundations.md`: language, frameworks, training vs. inference runtime,
+export format, pinned versions, and why — especially anything forced by the scoring environment
+(e.g. "Python 3.10 + ONNX Runtime, 1 thread"). Create `docs/code-map.md` once the directory layout
+exists (Step 6): plain lookup tables of paths, entry points and key functions, no prose. For an
+empty repo, code-map starts with the layout only and grows as code lands — never list files that
+don't exist yet.
 
 ### Step 3: Settle the evaluation protocol with the human
 
@@ -167,9 +237,17 @@ layout from the archetype; first commit `[harness] initial setup`.
 ### Step 7: CLAUDE.md and rules
 
 Create `CLAUDE.md` (≤120 lines) from the template: one-line task, role contract, routing table,
-status block, stop points, delegation. Generate the standard rule set from `templates.md` § Rules
+status block, stop points, memory rules, delegation. Create `docs/arch-harness.md` and stamp
+`Harness version: experiment-harness v<this skill's version>` in its header — upgrades detect from it. Tell the user once that auto memory is
+machine-local and pointer-only in this harness. Generate the standard rule set from `templates.md` § Rules
 plus the archetype's extra rules. Adjust every glob to the real tree — a glob that matches nothing
-is a rule that silently never fires.
+is a rule that silently never fires. A rule that guards a doc mirrors that doc's Invariants block
+exactly — the one duplication the harness accepts, because the two serve different retrieval paths;
+changing one means changing both in the same edit.
+
+Deferred components (e.g. a game spec before launch day) get an entry in `arch-harness.md` §
+Deferred Components with their trigger, and **no routing row until the file exists** — a row pointing
+at a missing file is worse than no row.
 
 ### Step 8: Present and confirm
 
@@ -191,6 +269,8 @@ Each operation is specified in `protocols.md`. Summary:
 | "retract …" | Retraction procedure: mark, never delete, propagate to FINDINGS / LOG / CLAUDE.md |
 | "freeze" / "submit" | The archetype's submission gate |
 | "postmortem" | `experiments/POSTMORTEM.md` |
+| "audit harness" | The audit in `arch-harness.md`, including the doc-rot check |
+| "upgrade harness" | `upgrade.md` § Self-upgrade |
 
 ---
 
@@ -220,8 +300,13 @@ window — not from a convenience analyzer.
 re-testing dead ideas. `FINDINGS.md` keeps retractions visible with ⚠ markers — never delete a
 wrong claim; strike it and say what replaced it.
 
-**Always-loaded is the scarce resource.** CLAUDE.md stays a snapshot. History lives in LOG,
-FINDINGS and git.
+**Always-loaded is the scarce resource.** CLAUDE.md stays a snapshot and auto memory holds
+pointers only. History lives in LOG, FINDINGS and git — a number that lives anywhere else will
+eventually be quoted after it was retracted.
+
+**A stale doc is worse than no doc.** A doc naming a deleted function or a moved config gets
+believed. The audit greps every path and symbol the docs mention and fixes or removes what no
+longer exists.
 
 **Speed over ceremony.** Strictly maintain CLAUDE.md status, `LOG.md`, `REJECTED.md`,
 `FINDINGS.md` and `task-spec.md`. Other docs change only on structural decisions. If bookkeeping

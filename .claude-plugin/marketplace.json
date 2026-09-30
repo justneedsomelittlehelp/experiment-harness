@@ -8,7 +8,7 @@
       "name": "experiment-harness",
       "source": "./plugins/experiment-harness",
       "description": "Experiment-driven research harness for Claude Code — human owns ideas and architecture, Claude runs experiments, logs results and keeps version control. Prediction and agent-competition archetypes.",
-      "version": "0.1.0"
+      "version": "0.1.3"
     }
   ]
 }

@@ -121,7 +121,9 @@ high confidence). The human confirms; Claude executes.
 5. Show the retracted and corrected numbers side by side, and decompose the gap (e.g. annualization
    window, fees, seed variance, leak) so the lesson is concrete.
 6. Add the mechanism to `eval-protocol.md` Leakage Checklist if it's new (eval change → approval).
-7. Commit `[harness] retract F<n>: <reason>`.
+7. Check auto memory (`/memory`) for the retracted number or claim and delete it — a stale copy
+   there will be quoted in the next session.
+8. Commit `[harness] retract F<n>: <reason>`.
 
 ---
 

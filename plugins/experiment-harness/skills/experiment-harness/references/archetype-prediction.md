@@ -12,6 +12,8 @@ Kaggle contest; a personal trading-model research project (no submission, pristi
 CLAUDE.md
 docs/
   task-spec.md
+  code-map.md                  # repo anchor: entry points, directory map, key symbols
+  arch-foundations.md          # stack: training framework, inference runtime, export format, pins
   eval-protocol.md
   arch-<component>.md          # one per model family the human specifies
   arch-data-pipeline.md        # only if preprocessing is non-trivial (sharding, caching, features)

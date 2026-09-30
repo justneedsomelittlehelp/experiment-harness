@@ -15,6 +15,8 @@ mid-season; teams may include a strategist who writes hypotheses but not code.
 CLAUDE.md
 docs/
   task-spec.md               # = game spec: units, API, constants, win conditions, submission limits
+  code-map.md                # repo anchor: runner, bot entry, snapshot/submit scripts
+  arch-foundations.md        # language, engine version pin, allowed libraries
   eval-protocol.md           # opponent pool, map split, games per pairing, time-budget margin
   arch-strategy.md           # human/strategist's macro plan: opening, economy→military timing, win path
   arch-<domain>.md           # 3–5 game domains derived from the spec on launch day — never hardcoded
@@ -42,21 +44,21 @@ opponents. Each snapshot is also tagged `vNNN`.
 ### Pre-launch (game not revealed)
 Create only game-independent parts: eval runner with real working code against the current engine
 (smoke-tested), experiment system, snapshot/eval/experiment rules, `eval-protocol.md`, CLAUDE.md with
-Status and Deferred Components: `task-spec.md (game), arch-<domain>.md, arch-strategy.md — create on
-launch day <date>`. Optional practice on the previous season's game lives in `practice/`, archived
+Status and Deferred Components in `arch-harness.md`: `task-spec.md (game), arch-<domain>.md,
+arch-strategy.md — create on launch day <date>` (no routing rows until they exist). Optional practice on the previous season's game lives in `practice/`, archived
 on launch day; nothing from it is imported into `bots/`.
 
 ### Launch day
 1. Fetch the official docs (use an `llms.txt` index if offered) → `task-spec.md`, stamped with engine
    version and date. Never carry mechanics over from a previous season.
 2. Language decision (if several are allowed): record trade-offs in `task-spec.md` Constraints and
-   the decision in `arch-harness.md`. Default: the language the team can debug fastest, unless the
+   the decision in `arch-foundations.md`. Default: the language the team can debug fastest, unless the
    spec makes compute clearly binding.
 3. Derive 3–5 domains from the spec (e.g. pathing, economy, combat, communication); propose `paths`
    globs; human confirms.
 4. Create domain docs, `arch-strategy.md` (starter baseline + first plan), domain rules.
 5. Wire the runner to the new engine; EXP-000 = starter vs. starter on all maps.
-6. Clear Deferred Components.
+6. Add routing rows for the new docs, clear their Deferred Components entries, update `code-map.md`.
 
 ### Engine patch
 Spec Change procedure (`protocols.md`) + re-run the current best vs. pool to re-establish baselines.

@@ -1,7 +1,7 @@
 {
   "name": "experiment-harness",
   "description": "Experiment-driven research harness — task anchor, frozen eval protocol, experiment log with retractions, role contract between human (ideas, architecture) and Claude (execution, logging, git).",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "author": {
     "name": "justneedsomelittlehelp"
   },

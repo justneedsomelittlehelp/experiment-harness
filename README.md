@@ -23,14 +23,16 @@ anti-hallucination anchor) and replaces the phase roadmap with an experiment sys
 ```
 CLAUDE.md                  # role contract, routing table, status snapshot, stop points
 docs/
-  task-spec.md             # anchor: data, metric, constraints, deadlines (stamped with source + date)
+  task-spec.md             # task anchor: data, metric, constraints, deadlines (stamped with source + date)
+  code-map.md              # repo anchor: entry points, directory map, key symbols
+  arch-foundations.md      # stack and dependency choices, with reasons
   eval-protocol.md         # splits, holdout, seeds, promotion rule, leakage checklist — frozen
   arch-<component>.md      # human-authored specs
-  arch-harness.md
+  arch-harness.md          # harness version, audit (incl. doc-rot check), deferred components
 experiments/
   LOG.md  EXP-NNN.md  INBOX.md  REJECTED.md  FINDINGS.md  COMPUTE.md
 eval/                      # locked metric implementation
-.claude/rules/             # eval-freeze, experiments, src-model, task-spec-sync, compute, harness (+ archetype)
+.claude/rules/             # eval-freeze, experiments, src-model, task-spec-sync, dependencies, code-map-sync, compute, harness (+ archetype)
 ```
 
 ## Archetypes
@@ -51,8 +53,9 @@ Or copy `plugins/experiment-harness/skills/experiment-harness/` into `~/.claude/
 
 - "Set up an experiment harness for this competition" (with links or files)
 - "Migrate this project from project-harness"
+- "Upgrade harness" (repo set up with an older experiment-harness version)
 - Ongoing: "process inbox", "new experiment: …", "run EXP-7", "log results", "status report",
-  "retract F3", "freeze", "submit", "engine updated", "postmortem"
+  "retract F3", "audit harness", "freeze", "submit", "engine updated", "postmortem"
 
 ## License
 
